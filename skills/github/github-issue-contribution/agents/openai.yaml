@@ -1,0 +1,4 @@
+interface:
+  display_name: "GitHub Issue Contribution"
+  short_description: "Turn an issue into a guarded draft PR"
+  default_prompt: "Use $github-issue-contribution to address this GitHub issue and stop at a draft PR."
