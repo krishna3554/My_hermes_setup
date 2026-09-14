@@ -841,6 +841,7 @@ def _resolve_named_custom_runtime(
             (explicit_api_key or "").strip(),
             # Gate env key fallbacks on authoritative hosts (#28660)
             (_getenv("OPENAI_API_KEY", "").strip()     if _da_is_openai_url else ""),
+            (_getenv("OPENROUTER_API_KEY", "").strip() if _da_is_openrouter else ""),
             (get_openrouter_key()                      if _da_is_openrouter  else ""),
             # Bonus (#28660): derive `<VENDOR>_API_KEY` from the host so users
             # who set DEEPSEEK_API_KEY / GROQ_API_KEY / MISTRAL_API_KEY get the
@@ -900,6 +901,7 @@ def _resolve_named_custom_runtime(
         # Gate provider env keys on their authoritative hosts — sending
         # OPENAI_API_KEY to a local-llm endpoint leaks credentials (#28660).
         (_getenv("OPENAI_API_KEY", "").strip()     if _cp_is_openai_url  else ""),
+        (_getenv("OPENROUTER_API_KEY", "").strip() if _cp_is_openrouter  else ""),
         (get_openrouter_key()                      if _cp_is_openrouter  else ""),
         # Bonus (#28660): derive `<VENDOR>_API_KEY` from the host as a final
         # fallback when key_env wasn't set explicitly.
@@ -1001,6 +1003,7 @@ def _resolve_openrouter_runtime(
         from providers.openrouter_manager import get_openrouter_key
         api_key_candidates = [
             explicit_api_key,
+            _getenv("OPENROUTER_API_KEY"),
             get_openrouter_key(),
             _getenv("OPENAI_API_KEY"),
         ]
@@ -1026,6 +1029,7 @@ def _resolve_openrouter_runtime(
             (cfg_api_key if use_config_base_url else ""),
             (_getenv("OLLAMA_API_KEY")     if _is_ollama_url                       else ""),
             (_getenv("OPENAI_API_KEY")     if (_is_openai_url or _is_openai_azure) else ""),
+            (_getenv("OPENROUTER_API_KEY") if _is_openrouter_url                   else ""),
             (get_openrouter_key()          if _is_openrouter_url                   else ""),
             # Bonus (#28660): derive `<VENDOR>_API_KEY` from the host so users
             # who set DEEPSEEK_API_KEY / GROQ_API_KEY / MISTRAL_API_KEY get the

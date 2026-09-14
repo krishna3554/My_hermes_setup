@@ -31,7 +31,15 @@ _manager = None
 
 
 def get_openrouter_key():
-    """Return the active OpenRouter API key from the shared key manager."""
+    """Return the active OpenRouter API key from the shared key manager.
+
+    Plain ``OPENROUTER_API_KEY`` wins over the pooled ``_1/_2/_3`` keys and
+    is read fresh on every call so test ``monkeypatch.setenv`` (and runtime
+    env changes) take effect even after the pool manager has been cached.
+    """
+    plain = (os.getenv("OPENROUTER_API_KEY") or "").strip()
+    if plain:
+        return plain
     global _manager
     if _manager is None:
         try:
