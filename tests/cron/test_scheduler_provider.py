@@ -21,6 +21,24 @@ import time
 from unittest.mock import patch
 
 
+def _wait_until(predicate, timeout=10.0, interval=0.005):
+    """Block until ``predicate()`` is truthy or ``timeout`` elapses.
+
+    Returns the predicate's final value. Used instead of a fixed
+    ``time.sleep`` before asserting that a background ticker thread has called
+    tick()/heartbeat() at least N times — under loaded CI the worker thread may
+    not be scheduled within a short fixed sleep, which made these tests flake
+    (``assert 0 >= 1`` / ``provider never called tick()``).
+    """
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        value = predicate()
+        if value:
+            return value
+        time.sleep(interval)
+    return predicate()
+
+
 def test_ticker_calls_tick_at_least_once_then_stops():
     """The gateway in-process ticker loop calls cron.scheduler.tick repeatedly
     and exits promptly once the stop_event is set."""
@@ -34,7 +52,7 @@ def test_ticker_calls_tick_at_least_once_then_stops():
         return 0
 
     with patch("cron.scheduler.tick", side_effect=fake_tick):
-        # interval=0 keeps the loop tight; stop after a brief beat.
+        # interval=0 keeps the loop tight; stop after the first observed tick.
         t = threading.Thread(
             target=_start_cron_ticker,
             args=(stop,),
@@ -42,7 +60,7 @@ def test_ticker_calls_tick_at_least_once_then_stops():
             daemon=True,
         )
         t.start()
-        time.sleep(0.2)
+        assert _wait_until(lambda: len(calls) >= 1), "ticker never called tick()"
         stop.set()
         t.join(timeout=5)
 
@@ -74,7 +92,7 @@ def test_desktop_ticker_calls_tick_then_stops():
             daemon=True,
         )
         t.start()
-        time.sleep(0.2)
+        assert _wait_until(lambda: len(calls) >= 1), "desktop ticker never called tick()"
         stop.set()
         t.join(timeout=5)
 
